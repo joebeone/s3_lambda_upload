@@ -1,0 +1,23 @@
+{
+  "name": "s3_lambda_upload",
+  "version": "1.0.0",
+  "description": "simple SAML app to provide a S3 signed URL for uploads to S3 buckets",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/joebeone/s3_lambda_upload.git"
+  },
+  "keywords": [
+    "s3",
+    "lambda"
+  ],
+  "author": "Joe Bennett",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/joebeone/s3_lambda_upload/issues"
+  },
+  "homepage": "https://github.com/joebeone/s3_lambda_upload#readme"
+}

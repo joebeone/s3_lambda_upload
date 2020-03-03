@@ -1,0 +1,54 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+ S3 file uploads
+ AWS Serverless Application upload files 
+Globals:
+  Function:
+    Timeout: 3
+Resources:
+  FileApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Prod
+      Auth:
+        ApiKeyRequired: true
+  UploadFileBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: upload-file-bucket
+  UploadURL:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: ./
+      Handler: app.uploadHandler
+      Runtime: nodejs12.x
+      Events:
+        UploadAgc:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            RestApiId: !Ref FileApi
+            Path: /upload/url
+            Method: get
+            RequestParameters:
+             - method.request.querystring.file_name
+             - method.request.querystring.bucket_name
+      Policies:
+        #Give access to S3 Bucket
+        - S3CrudPolicy:
+            BucketName: 
+              !Ref UploadFileBucket
+
+Outputs:
+  UploadApi:
+    Description: "API Gateway endpoint URL for Prod stage for Upload function"
+    Value: !Sub "https://${FileApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/upload/url"
+  UploadFunction:
+    Description: ""
+    Value: !GetAtt UploadURL.Arn
+  UploadFunctionIamRole:
+    Description: "Implicit IAM Role created for UploadURL function"
+    Value: !GetAtt UploadURL.Arn
+  AgcCarS3Logs:
+    Description: "S3 Bucket:"
+    Value: !GetAtt UploadFileBucket.Arn
