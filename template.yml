@@ -3,20 +3,39 @@ Transform: AWS::Serverless-2016-10-31
 Description: >
  S3 file uploads
  AWS Serverless Application upload files 
+Parameters:
+  BucketName:
+    Type: String
+    AllowedPattern: (?=^.{3,63}$)(?!^(\d+\.)+\d+$)(^(([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])\.)*([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])$)
+    Description: Enter a S3 bucket name
 Globals:
   Function:
     Timeout: 3
 Resources:
-  FileApi:
+  FileUploadApi:
     Type: AWS::Serverless::Api
     Properties:
       StageName: Prod
       Auth:
         ApiKeyRequired: true
-  UploadFileBucket:
+  FileUploadApiKey:
+    Type: AWS::ApiGateway::ApiKey
+    DependsOn:
+      - FileUploadApi
+      - Prod 
+    Properties:
+      Name: FileUploadApiKey
+      Description: API key to use for the S3 bucket uploader
+      Enable: 'true'
+      StageKeys:
+        - RestApiId: !Ref FileUploadApi
+          StageName: Prod
+
+  FileUploadBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: upload-file-bucket
+      BucketName: 
+        !Ref BucketName
   UploadURL:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
@@ -27,7 +46,7 @@ Resources:
         UploadAgc:
           Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
           Properties:
-            RestApiId: !Ref FileApi
+            RestApiId: !Ref FileUploadApi
             Path: /upload/url
             Method: get
             RequestParameters:
@@ -37,18 +56,21 @@ Resources:
         #Give access to S3 Bucket
         - S3CrudPolicy:
             BucketName: 
-              !Ref UploadFileBucket
+              !Ref FileUploadBucket
 
 Outputs:
-  UploadApi:
-    Description: "API Gateway endpoint URL for Prod stage for Upload function"
-    Value: !Sub "https://${FileApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/upload/url"
-  UploadFunction:
+  UploadApiInfo:
+    Description: "API Gateway endpoint URL for Prod stage for Upload function:"
+    Value: !Sub "https://${FileUploadApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/upload/url"
+  FileUploadApiKeyInfo:
+    Description: "API Key:"
+    Value: !Ref FileUploadApiKey
+  UploadFunctionInfo:
     Description: ""
     Value: !GetAtt UploadURL.Arn
-  UploadFunctionIamRole:
-    Description: "Implicit IAM Role created for UploadURL function"
+  UploadFunctionIamRoleInfo:
+    Description: "Implicit IAM Role created for UploadURL function:"
     Value: !GetAtt UploadURL.Arn
-  AgcCarS3Logs:
+  UploadFileBucketInfo:
     Description: "S3 Bucket:"
-    Value: !GetAtt UploadFileBucket.Arn
+    Value: !GetAtt FileUploadBucket.Arn
