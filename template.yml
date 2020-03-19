@@ -8,34 +8,14 @@ Parameters:
     Type: String
     AllowedPattern: (?=^.{3,63}$)(?!^(\d+\.)+\d+$)(^(([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])\.)*([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])$)
     Description: Enter a S3 bucket name
+  StageName:
+    Type: String
+    Default: 'prod'
+    Description: Enter the API Stage name
 Globals:
   Function:
     Timeout: 3
 Resources:
-  FileUploadApi:
-    Type: AWS::Serverless::Api
-    Properties:
-      StageName: Prod
-      Auth:
-        ApiKeyRequired: true
-  FileUploadApiKey:
-    Type: AWS::ApiGateway::ApiKey
-    DependsOn:
-      - FileUploadApi
-      - Prod 
-    Properties:
-      Name: FileUploadApiKey
-      Description: API key to use for the S3 bucket uploader
-      Enable: 'true'
-      StageKeys:
-        - RestApiId: !Ref FileUploadApi
-          StageName: Prod
-
-  FileUploadBucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      BucketName: 
-        !Ref BucketName
   UploadURL:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
@@ -57,11 +37,34 @@ Resources:
         - S3CrudPolicy:
             BucketName: 
               !Ref FileUploadBucket
+  FileUploadApiKey:
+    Type: AWS::ApiGateway::ApiKey
+    DependsOn:
+      - FileUploadApiStage
+    Properties:
+      Name: FileUploadApiKey
+      Description: API key to use for the S3 bucket uploader
+      Enabled: true
+      StageKeys:
+        - RestApiId: !Ref FileUploadApi
+          StageName: !Ref StageName
+  FileUploadApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: FileUploadApi
+      StageName: !Ref StageName
+      Auth:
+        ApiKeyRequired: true
+  FileUploadBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: 
+        !Ref BucketName
 
 Outputs:
   UploadApiInfo:
     Description: "API Gateway endpoint URL for Prod stage for Upload function:"
-    Value: !Sub "https://${FileUploadApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/upload/url"
+    Value: !Sub "https://${FileUploadApi}.execute-api.${AWS::Region}.amazonaws.com/${StageName}/upload/url"
   FileUploadApiKeyInfo:
     Description: "API Key:"
     Value: !Ref FileUploadApiKey
